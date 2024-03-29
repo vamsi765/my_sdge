@@ -47,6 +47,29 @@ def convert_12h_to_24h(time_str):
     return int(time_24h_str)
 
 
+def validate_dates(days):
+    """
+    To validate that the data is within one continuous year.
+    """
+    # days is sorted from low to high
+    if days[0].date.year == days[-1].date.year:
+        # all data from the same year
+        pass
+    if days[-1].date.year - days[0].date.year > 1:
+        # this contains data from more than one year
+        raise ValueError("Cannot use data from more than one year")
+    if days[-1].date.year - days[0].date.year == 1:
+        # span year n and year n+1
+        if days[-1].date.month > days[0].date.month:
+            # this contains data from more than one year
+            # for example 2023-09 is more than 1 year from any day in 2022-08
+            raise ValueError("Cannot use data from more than one year")
+        elif days[-1].date.month == days[0].date.month:
+            # starting from (y,m,d), you can get to (y+1,m,d-1) as the last day when d!=1
+            if days[-1].date.day >= days[0].date.day:
+                raise ValueError("Cannot use data from more than one year")
+
+
 SDGEDay = namedtuple("SDGEDate", ["date", "season"])
 
 pwd = os.path.dirname(os.path.realpath(__file__))
@@ -63,7 +86,8 @@ class SDGECaltulator:
         self.total_usage = sum([sum([x[1] for x in usage]) for date, usage in self.daily_24h.items()])
         self.solar = solar
 
-        assert self.days[0].date.year == self.days[-1].date.year, "all data must be from the same year"
+        #assert self.days[0].date.year == self.days[-1].date.year, "all data must be from the same year"
+        validate_dates(self.days)
         self.print_info()
 
     def print_info(self):
@@ -205,14 +229,19 @@ def schedule_sop(date):
     weekday = date.weekday()
 
     # mark US holidays
-    cal = USFederalHolidayCalendar()
-    start = datetime.datetime(date.year, 1, 1)
-    end = datetime.datetime(date.year + 1, 1, 1)
-    holidays = cal.holidays(start=start, end=end).to_pydatetime()
+    holidays = holidays_of_year(date.year)
 
     if weekday == 5 or weekday == 6 or date in holidays:
         return HOLIDAY_HOURS
     return WEEKDAY_HOURS
+
+@cache
+def holidays_of_year(year):
+    cal = USFederalHolidayCalendar()
+    start = datetime.datetime(year, 1, 1)
+    end = datetime.datetime(year + 1, 1, 1)
+    holidays = cal.holidays(start=start, end=end).to_pydatetime()
+    return holidays
 
 
 @cache
@@ -471,7 +500,7 @@ def plot_sdge_hourly(filename, zone, pcia_year, solar):
     # df = df.drop_duplicates(subset=["Date","Start Time"], keep="last")
     # this step sums duplicates for 60-min interval data; aggregates the 15-min interval data into hourly data
     df = df.astype("object").groupby(["Date", "Start Time"], as_index=False, sort=False).agg("sum")  # use astype to prevent pd from converting int to float
-    daily = df.groupby("Date")[["Start Time", consumption_column_label]].apply(lambda x: tuple(x.values))
+    daily = df.groupby("Date")[["Start Time", consumption_column_label]].apply(lambda x: tuple(x.values)) # sorted by date by default
 
     # tou_stacked_plot(daily=daily, plan="TOU-DR1")
 
