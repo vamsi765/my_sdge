@@ -77,7 +77,7 @@ If you are a NEM1.0 user, add `-s NEM1.0` to the end of the command.
 2. Follow the instructions there:
     - Run the first cell to install the script.
 	- Upload your own usage file.
-	- Modify the command to reflect your username and options, then run.
+	- Modify the command to reflect your filename and options, then run.
 
 ### Where to get the 15-min or 60-minute usage csv file?
 - Using a desktop computer, sign into your SDGE account.
@@ -100,7 +100,7 @@ On your PDF SDGE bill, the year of your PCIA fee is indicated.
 
 For example, on my bill, in the section above "Total Electric Charges", "PCIA 2021" is listed, which means the year is 2021.
 
-As different years have different PCIA fee, if the fee for a particular year is high, it might make the usually slightly cheaper CCA plans slightly more expensive than non-CCA.
+As different years have different PCIA fee, if the fee for a particular year is high, it might make the usually slightly cheaper (**in 2024, this is no longer true for summer months, you can examine the rates `.yaml` files to view the rates**) CCA plans slightly more expensive than non-CCA.
 
 ### How are the bills calculated?
 
