@@ -18,6 +18,8 @@ python3.9 -m pip install -r requirements.txt
 
 Should work with both python3.9 and python3.10. Other versions are not tested.
 
+**If you have no idea how to get this to run, see [the FAQ](#non-techie) for a zero set-up option.**
+
 ## Usage
 see the help:
 ```bash
@@ -68,6 +70,14 @@ DR              $380.2473 $0.4652/kWh
 If you are a NEM1.0 user, add `-s NEM1.0` to the end of the command.
 
 ## FAQ
+
+### <span id="non-techie"></span>I am not a tech-savvy person, how can I use this? 
+1. On your desktop computer, with your google account logged in,
+   go to this [Colab Notebook](https://colab.research.google.com/drive/1AH78DOSFSCTQvkaRyTx0JFKBNnI03_vo?usp=sharing)
+2. Follow the instructions there:
+    - Run the first cell to install the script.
+	- Upload your own usage file.
+	- Modify the command to reflect your username and options, then run.
 
 ### Where to get the 15-min or 60-minute usage csv file?
 - Using a desktop computer, sign into your SDGE account.
