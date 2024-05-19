@@ -110,3 +110,23 @@ CCA: CCA generation fee + SDGE delivery fee - allowance credit + PCIA
 
 NEM1.0: similar to above; uses net consumption instead of consumption for calculations; applies the allowance credit as described in [page 6](https://www.sdge.com/sites/default/files/elec_elec-scheds_nem.pdf).
 (the current calculation is estimate only, it has not taken non-bypassable into account yet, so it's NEM1.0)
+
+### I currently do not have an EV but I am wondering what an EV will do to my bill?
+
+You can simulate the EV by convert your current usage file to a new usage file with imaginary EV usage each day.
+
+For example, you would like to simulate having an EV which consumes 10kWh per night (charged during the super offpeak hours).
+
+On a Unix based computer, you can run the following command in the terminal to add extra usage during the super offpeak hours each day:
+
+```bash
+awk -F, '{
+    if ($3 == "\"12:00 AM\"") {
+        $5 = "\"" sprintf("%.4f", substr($5, 2) + 10) "\"";
+        $7 = $5;
+    }
+    print $0
+}' "Electric_60_Minute_11-1-2022_11-30-2022_20230819.csv" > output.csv
+```
+
+After running the command, you will have a new file named `output.csv`. Then you can use it as the input for the bill comparison script.
