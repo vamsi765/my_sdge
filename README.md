@@ -120,12 +120,13 @@ For example, you would like to simulate having an EV which consumes 10kWh per ni
 On a Unix based computer, you can run the following command in the terminal to add extra usage during the super offpeak hours each day:
 
 ```bash
-awk -F, '{
-    if ($3 == "\"12:00 AM\"") {
-        $5 = "\"" sprintf("%.4f", substr($5, 2) + 10) "\"";
-        $7 = $5;
-    }
-    print $0
+awk -F, -v increment=10 'BEGIN{OFS=FS=","}{
+if ($3 == "\"12:00 AM\"") {
+gsub(/"/, "", $5);
+$5 = "\"" sprintf("%.4f", $5 + increment) "\"";
+$7 = "\"" sprintf("%.4f", $7 + increment) "\"";
+}
+print $0
 }' "Electric_60_Minute_11-1-2022_11-30-2022_20230819.csv" > output.csv
 ```
 
