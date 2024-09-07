@@ -81,7 +81,7 @@ If you are a NEM1.0 user, add `-s NEM1.0` to the end of the command.
 
 ### Where to get the 15-min or 60-minute usage csv file?
 - Using a desktop computer, sign into your SDGE account.
-- Go to https://myaccount.sdge.com/portal/Usage/Index
+- Go to https://myenergycenter.com/portal/Usage/Index
 - Click the `Green Button Download` icon.
 - Select the starting date and the ending date.
 
