@@ -100,7 +100,7 @@ class SDGECaltulator:
     def generate_plots(self):
         # plot hourly data summed across days
         aggregated_hourly_net_usage_plot(daily=self.daily_24h)
-        daily_net_usage_plot(daily=self.daily_24h)
+        daily_net_usage_kwh_plot(daily=self.daily_24h)
 
     @cache
     def tally(self, schedule=None):
@@ -275,6 +275,7 @@ rates_schedules = {
     "CCA-EV-TOU-2": schedule_sop,
     "CCA-DR": schedule_flat,
     "CCA-DR-SES": schedule_sop,
+    "TOU-ELEC": schedule_sop,
 }
 schedule_sop.rates_classes = ["SUPER_OFFPEAK", "OFFPEAK", "PEAK"]
 schedule_op.rates_classes = ["OFFPEAK", "PEAK"]
@@ -338,10 +339,10 @@ def tou_stacked_plot(daily=None, plan=None):
     plt.title("Daily Consumption")
     plt.legend()
     plt.tight_layout()
-    plt.show()
+    # plt.show()
 
 
-def daily_net_usage_plot(daily=None):
+def daily_net_usage_kwh_plot(daily=None):
     """
     Generates sum of energy usage for each day.
     """
@@ -355,6 +356,44 @@ def daily_net_usage_plot(daily=None):
     plt.gca().xaxis.set_major_locator(mdates.AutoDateLocator())
     plt.gcf().autofmt_xdate()
     plt.ylabel("Net Usage (kWh)")
+    # plt.show()
+    plt.savefig(f"plot_daily_net_usage_{dates[0].strftime('%Y%m%d')}_{dates[-1].strftime('%Y%m%d')}.png", dpi=300)
+
+
+def daily_net_usage_dlr_plot(daily=None, rates=None, plan=None):
+    """
+    Generates sum of energy usage for each day.
+    """
+    dates = extract_dates(daily)
+    daily_arrays = category_tally_by_plan(daily=daily, plan=plan)
+
+    plt.figure()
+    plt.title(f'Daily Net Usage: {dates[0].strftime("%Y/%m/%d")} to {dates[-1].strftime("%Y/%m/%d")}')
+    rates_arr = dict()
+    for rate_date in dates:
+        season = get_season(rate_date)
+        rate_day = rates[plan][season]
+        for key, value in rate_day.items():
+            if key not in rates_arr:
+                rates_arr[key] = [value]
+            else:
+                rates_arr[key].append(value)
+    previous = np.zeros(len(dates))
+    previous_date = dict()
+    for index, category in enumerate(daily_arrays):
+        #print(index, category, daily_arrays[category])
+        daily_rate = daily_arrays[category]*rates_arr[category]
+        plt.bar(dates, daily_rate, label=category, color=f"C{index}", bottom=previous)
+        previous += daily_rate
+
+    # plt.bar(dates, previous)
+    plt.gca().xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m-%d"))
+    plt.gca().xaxis.set_major_locator(mdates.AutoDateLocator())
+    plt.gcf().autofmt_xdate()
+    plt.ylabel("Net Usage ($) -- " + plan)
+    plt.grid(linestyle="--", axis="y")
+    # plt.show()
+    plt.legend()
     plt.savefig(f"plot_daily_net_usage_{dates[0].strftime('%Y%m%d')}_{dates[-1].strftime('%Y%m%d')}.png", dpi=300)
 
 
@@ -372,6 +411,7 @@ def aggregated_hourly_net_usage_plot(daily=None):
     plt.ylabel("Net Usage (kWh)")
     plt.xlabel("Hour")
     plt.xlim([-0.5, 23.5])
+    # plt.show()
     plt.savefig(f"plot_aggregated_hourly_net_usage_{dates[0].strftime('%Y%m%d')}_{dates[-1].strftime('%Y%m%d')}.png", dpi=300)
 
 
@@ -382,6 +422,7 @@ def daily_hourly_2d_plot(daily=None):
     if len(daily.index) >= 50:
         return
     dates = extract_dates(daily)
+    plt.figure()
     fig, axs = plt.subplots(len(daily.index), 1, sharex=True)
 
     i = 0
@@ -407,11 +448,12 @@ def daily_hourly_2d_plot(daily=None):
     # add the common Y label after matplotlib 3.4.0
     fig.supylabel("Consumption by Day")
     fig.suptitle(f'Daily Details 2D: {dates[0].strftime("%Y/%m/%d")} to {dates[-1].strftime("%Y/%m/%d")}')
-    plt.show()
+    # plt.show()
 
 
 def daily_hourly_3d_plot(daily=None):
     if len(daily.index) >= 50:
+        print("index greater than 50: ", len(daily.index))
         return
     dates = extract_dates(daily)
     all_data = list(chain.from_iterable(daily))
@@ -458,7 +500,7 @@ def daily_hourly_3d_plot(daily=None):
     # manually set the orientation of labels
     ax.tick_params(axis="y", labelrotation=90)
     plt.title(f'Daily Details 3D: {dates[0].strftime("%Y/%m/%d")} to {dates[-1].strftime("%Y/%m/%d")}')
-    plt.show()
+    # plt.show()
 
 
 def load_df(filename):
@@ -505,8 +547,8 @@ def plot_sdge_hourly(filename, zone, pcia_year, solar):
     # tou_stacked_plot(daily=daily, plan="TOU-DR1")
 
     # plot day by day
-    # daily_hourly_2d_plot(daily=daily)
-    # daily_hourly_3d_plot(daily=daily)
+    daily_hourly_2d_plot(daily=daily)
+    daily_hourly_3d_plot(daily=daily)
 
     plans_and_charges = dict()
     rates_path = os.path.join(pwd, "sdge_rates_20240301.yaml")
@@ -514,21 +556,27 @@ def plot_sdge_hourly(filename, zone, pcia_year, solar):
     c = SDGECaltulator(daily, rates, zone=zone, pcia_year=pcia_year, solar=solar)
 
     if solar == "NA":
-        plans = ["TOU-DR1", "CCA-TOU-DR1", "EV-TOU-5", "CCA-EV-TOU-5", "EV-TOU-2", "CCA-EV-TOU-2", "TOU-DR2", "CCA-TOU-DR2", "DR", "CCA-DR"]
+        plans = ["TOU-DR1", "CCA-TOU-DR1", "EV-TOU-5", "CCA-EV-TOU-5", "EV-TOU-2", "CCA-EV-TOU-2", "TOU-DR2", "CCA-TOU-DR2", "DR", "CCA-DR", "TOU-ELEC"]
     else:
-        plans = ["TOU-DR1", "CCA-TOU-DR1", "EV-TOU-5", "CCA-EV-TOU-5", "EV-TOU-2", "CCA-EV-TOU-2", "TOU-DR2", "CCA-TOU-DR2", "DR-SES", "CCA-DR-SES"]
+        plans = ["TOU-DR1", "CCA-TOU-DR1", "EV-TOU-5", "CCA-EV-TOU-5", "EV-TOU-2", "CCA-EV-TOU-2", "TOU-DR2", "CCA-TOU-DR2", "DR-SES", "CCA-DR-SES", "TOU-ELEC"]
 
     for plan in plans:
         estimated_charge = c.calculate(plan=plan)
         plans_and_charges[plan] = estimated_charge
+        if "TOU-ELEC" == plan:
+            print("Plotting dollar: ", plan)
+            tou_stacked_plot(daily=daily, plan=plan)
+            daily_net_usage_dlr_plot(daily, rates, plan=plan)
 
     for item in sorted(plans_and_charges.items(), key=lambda x: x[1]):
         print(f"{item[0]:<15} ${item[1]:.4f} ${item[1]/c.total_usage:.4f}/kWh")
 
     c.generate_plots()
+    plt.show()
 
 
 if __name__ == "__main__":
     # print(get_baseline(zone="coastal", season="summer", service_type="electric", multiplier=1.3, billing_days=29))
 
     plot_sdge_hourly()
+
