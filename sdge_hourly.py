@@ -286,6 +286,7 @@ def extract_dates(daily):
     return [pd.to_datetime(x[0], "%Y-%m-%d").date() for x in daily.items()]
 
 
+
 def category_tally_by_plan(daily=None, plan=None):
     """
     Returns the daily sum of usage for each tou category in a dictionary.
@@ -523,16 +524,23 @@ def load_df(filename):
 @click.option("-s", "--solar", default="NA", type=click.Choice(["NA", "NEM1.0"]), show_default=True, help="The solar setup.")
 @click.option(
     "--pcia_year", default="2021", type=click.Choice([str(x) for x in range(2009, 2024)]), show_default=True, help="The vintage of the PCIA fee. (indicated on the bill)"
+
 )
 def plot_sdge_hourly(filename, zone, pcia_year, solar):
     df = load_df(filename)
-
+    
     interval = df.iloc[0]["Duration"]
     # convert the 12h-format start time to 24h-format
     df["Start Time"] = pd.to_datetime(df["Start Time"], format="%I:%M %p").dt.strftime("%H")
     # convert hour to int index
     df["Start Time"] = df["Start Time"].astype(int)
+    df['date_temp'] = pd.to_datetime(df['Date'])
+    
+    df= df[(df['date_temp'] > '2024-09-26') & (df['date_temp'] < "10/29/2024")]
 
+    df =  df.drop(columns="date_temp")
+    print(df.head(20))
+    print(df.tail(20))
     if solar == "NA":
         consumption_column_label = "Consumption"
     elif solar == "NEM1.0":
@@ -547,8 +555,8 @@ def plot_sdge_hourly(filename, zone, pcia_year, solar):
     # tou_stacked_plot(daily=daily, plan="TOU-DR1")
 
     # plot day by day
-    daily_hourly_2d_plot(daily=daily)
-    daily_hourly_3d_plot(daily=daily)
+    # daily_hourly_2d_plot(daily=daily)
+    # daily_hourly_3d_plot(daily=daily)
 
     plans_and_charges = dict()
     rates_path = os.path.join(pwd, "sdge_rates_20240301.yaml")
@@ -574,9 +582,13 @@ def plot_sdge_hourly(filename, zone, pcia_year, solar):
     c.generate_plots()
     plt.show()
 
-
 if __name__ == "__main__":
     # print(get_baseline(zone="coastal", season="summer", service_type="electric", multiplier=1.3, billing_days=29))
 
     plot_sdge_hourly()
+
+   
+
+
+
 
